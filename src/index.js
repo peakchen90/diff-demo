@@ -111,6 +111,35 @@ function patchVnode(oldVnode, newVnode, parentEl) {
   } else if (oldVnode.text !== newVnode.text) {
     oldVnode.el.textContent = newVnode.text;
   }
+
+  updateProps(oldVnode, newVnode);
+}
+
+function updateProps(oldVnode, newVnode) {
+  const oldProps = oldVnode.props;
+  const newProps = newVnode.props;
+
+  if (oldVnode.tag) {
+    if (oldProps) {
+      Object.keys(oldProps).forEach(key => {
+        const newVal = newProps[key];
+        if (newVal == null) {
+          oldVnode.el.removeAttribute(key);
+        }
+      });
+    }
+    if (newProps) {
+      Object.keys(newProps).forEach(key => {
+        const oldVal = oldProps[key];
+        const newVal = newProps[key];
+        if (oldVal == null) {
+          oldVnode.el.setAttribute(key, newVal);
+        } else if (oldVal !== newVal) {
+          oldVnode.el.setAttribute(key, newVal);
+        }
+      });
+    }
+  }
 }
 
 function createKeyToIndex(children, start, end) {
@@ -167,7 +196,10 @@ function updateChildren(oldCh, newCh, parentEl) {
       const indexInOld = oldKeyToIndex[newStartVnode.key];
 
       if (!indexInOld) {
-        // 创建新node
+        parentEl.insertBefore(
+          newStartVnode.render(),
+          oldStartVnode.el
+        );
       } else {
         vnodeToMove = oldCh[indexInOld];
         if (!vnodeToMove) {
@@ -180,8 +212,11 @@ function updateChildren(oldCh, newCh, parentEl) {
             vnodeToMove.el,
             oldStartVnode.el
           );
-        } else { // key相同，但是不同的vnode，需要创建节点
-          // 创建新node
+        } else { // key相同，但是不同的vnode，需要创建新节点
+          parentEl.insertBefore(
+            newStartVnode.render(),
+            oldStartVnode.el
+          );
         }
       }
 
@@ -210,45 +245,32 @@ function removeNodes(children, start, end, parentEl) {
   }
 }
 
-let old1 = createElement('div', {
-  key: '1',
-  class: 'test-1',
-}, 'test-1');
+let old1 = createElement('div', { key: '1', }, 'test-1');
 
-let old2 = createElement('input', {
-  key: '2',
-  class: 'test-2'
-}, 'test-2');
+let old2 = createElement('input', { key: '2', }, 'test-2');
 
 let old3 = createElement('p', {
   key: '3',
-  class: 'test-3',
   style: 'color: #f00;'
 }, 'test-3');
 
-let oldNode = createElement('div', null, [
-  old2, old1, old3
-]);
 
 let new1 = createElement('p', {
   key: '3',
-  class: 'test-3--new',
-  style: 'color: blue;'
+  style: 'color: green;'
 }, 'test-3--new');
 
-let new2 = createElement('input', {
-  key: '2',
-  class: 'test-2'
-}, 'test-2');
+let new2 = createElement('input', { key: '2', }, 'test-2--new');
 
-let new3 = createElement('div', {
-  key: '1',
-  class: 'test-1--new'
-}, 'test-1--new');
+let new3 = createElement('div', { key: '3', }, 'test-3--new');
 
+
+let oldNode = createElement('div', null, [old2, old1, old3]);
 let newNode = createElement('div', null, [
-  new2, new1, new3, createElement('a', { href: '#' }, 'aa')
+  new3, new2,
+  // createElement('a', { href: '#' }, 'aa')
 ]);
+
 
 const root = document.getElementById('app');
 root.appendChild(oldNode.render());
